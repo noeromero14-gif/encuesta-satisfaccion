@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Encuesta de satisfacción</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#FBF8F2;
+    --card:#FFFFFF;
+    --ink:#211F1C;
+    --muted:#8C8676;
+    --line:#DAD3C3;
+    --accent:#2C6E63;
+    --accent-soft:#DCEAE6;
+    --accent-dark:#1E4E46;
+    --stamp:#B6432E;
+    --stamp-soft:#F3DFD8;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{width:100%;max-width:480px;}
+  .wrap.wide{max-width:880px;}
+
+  /* ---------- Ticket card ---------- */
+  .ticket{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:0 1px 2px rgba(33,31,28,0.04), 0 12px 32px -16px rgba(33,31,28,0.18);
+    position:relative;
+    overflow:hidden;
+  }
+  .perf{
+    height:14px;
+    background-image: radial-gradient(circle at 10px 7px, var(--paper) 6px, transparent 6.5px);
+    background-size:20px 14px;
+    background-repeat:repeat-x;
+    background-color:var(--accent);
+  }
+  .ticket-head{
+    background:var(--accent);
+    color:#fff;
+    padding:22px 24px 26px;
+    position:relative;
+  }
+  .ticket-head .eyebrow{
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    opacity:.8;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .ticket-head h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:22px;
+    margin:8px 0 0;
+    line-height:1.25;
+  }
+  .ticket-body{padding:24px 24px 8px;}
+  .ticket-foot{padding:4px 24px 22px;}
+
+  .section{margin-bottom:26px;}
+  .section:last-of-type{margin-bottom:8px;}
+  .q-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    margin:0 0 4px;
+  }
+  .q-sub{font-size:12.5px;color:var(--muted);margin:0 0 12px;}
+
+  /* divider */
+  .dash{
+    border:none;
+    border-top:1.5px dashed var(--line);
+    margin:22px 0;
+  }
+
+  /* stars */
+  .stars{display:flex;gap:6px;}
+  .star-btn{
+    background:none;border:none;cursor:pointer;padding:4px;
+    line-height:0;
+  }
+  .star-btn svg{width:30px;height:30px;display:block;}
+  .star-btn path{
+    fill:none;
+    stroke:var(--line);
+    stroke-width:1.6;
+    transition:fill .15s ease, stroke .15s ease;
+  }
+  .star-btn.filled path{
+    fill:var(--accent);
+    stroke:var(--accent);
+  }
+  .star-btn:focus-visible{outline:2px solid var(--accent-dark);outline-offset:2px;border-radius:6px;}
+  .stars-label{font-size:12px;color:var(--muted);margin-top:4px;height:14px;}
+
+  /* delivery type cards */
+  .choice-row{display:flex;gap:10px;}
+  .choice{
+    flex:1;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:14px 12px;
+    background:var(--paper);
+    cursor:pointer;
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .choice svg{width:20px;height:20px;display:block;margin-bottom:8px;color:var(--muted);}
+  .choice span{font-size:13.5px;font-weight:500;display:block;}
+  .choice.selected{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .choice.selected svg{color:var(--accent-dark);}
+  .choice:focus-visible{outline:2px solid var(--accent-dark);outline-offset:2px;}
+
+  .reveal{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:max-height .35s ease, opacity .25s ease;
+  }
+  .reveal.open{max-height:300px;opacity:1;}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{transition:none;}
+  }
+
+  textarea{
+    width:100%;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    resize:vertical;
+    min-height:64px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  textarea:focus-visible{outline:2px solid var(--accent-dark);}
+
+  .btn{
+    width:100%;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:13px 16px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--accent-dark);}
+  .btn:disabled{background:var(--line);cursor:not-allowed;}
+  .btn:focus-visible{outline:2px solid var(--accent-dark);outline-offset:2px;}
+  .btn.ghost{
+    background:transparent;color:var(--accent-dark);
+    border:1.5px solid var(--accent-soft);
+  }
+  .btn.ghost:hover{background:var(--accent-soft);}
+
+  .warn{
+    font-size:12.5px;color:var(--stamp);margin:10px 0 0;min-height:14px;
+  }
+
+  .footer-link{
+    text-align:center;margin-top:18px;
+  }
+  .footer-link button{
+    background:none;border:none;color:var(--muted);
+    font-size:11.5px;font-family:'IBM Plex Mono',monospace;
+    cursor:pointer;letter-spacing:.03em;
+  }
+  .footer-link button:hover{color:var(--accent-dark);}
+
+  /* success */
+  .success{
+    text-align:center;padding:30px 16px 10px;
+  }
+  .stamp-badge{
+    width:104px;height:104px;border-radius:50%;
+    border:3px solid var(--stamp);
+    color:var(--stamp);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 18px;
+    transform:rotate(-8deg);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;
+    text-align:center;line-height:1.25;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .stamp-badge{animation:stampIn .4s cubic-bezier(.2,1.4,.4,1);}
+  }
+  @keyframes stampIn{from{transform:rotate(-8deg) scale(1.6);opacity:0;}to{transform:rotate(-8deg) scale(1);opacity:1;}}
+  .success h2{font-family:'Space Grotesk',sans-serif;margin:0 0 6px;font-size:19px;}
+  .success p{color:var(--muted);font-size:13.5px;margin:0 0 22px;}
+  .ticket-no{font-size:12px;color:var(--muted);margin-top:18px;}
+
+  /* ---------- Admin ---------- */
+  .admin-gate{
+    display:flex;flex-direction:column;gap:14px;padding:30px 24px;
+  }
+  .admin-gate input{
+    border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;
+    font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.1em;
+    background:var(--paper);color:var(--ink);text-align:center;
+  }
+  .admin-gate input:focus-visible{outline:2px solid var(--accent-dark);}
+  .shake{animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+  .admin-top{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    margin-bottom:22px;flex-wrap:wrap;gap:10px;
+  }
+  .admin-top h1{font-family:'Space Grotesk',sans-serif;font-size:20px;margin:0;}
+  .admin-top p{color:var(--muted);font-size:12.5px;margin:4px 0 0;}
+  .admin-actions{display:flex;gap:8px;}
+  .admin-actions button{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    border:1.5px solid var(--line);background:var(--card);
+    border-radius:8px;padding:8px 12px;cursor:pointer;color:var(--ink);
+  }
+  .admin-actions button:hover{border-color:var(--accent);color:var(--accent-dark);}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 14px;
+  }
+  .kpi .num{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:600;}
+  .kpi .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+  .kpi .stars-mini{color:var(--accent);font-size:13px;}
+
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px;margin-bottom:20px;
+  }
+  .panel h3{font-family:'Space Grotesk',sans-serif;font-size:14.5px;margin:0 0 14px;}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;}
+
+  .comments{display:flex;flex-direction:column;gap:10px;max-height:280px;overflow:auto;}
+  .comment{
+    border-left:3px solid var(--accent-soft);
+    padding:6px 0 6px 12px;font-size:13px;
+  }
+  .comment .meta{font-size:11px;color:var(--muted);margin-top:3px;font-family:'IBM Plex Mono',monospace;}
+
+  /* weekend table */
+  .wtable{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .wtable th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    padding:0 10px 10px;font-weight:500;
+  }
+  .wtable td{
+    padding:12px 10px;border-top:1.5px dashed var(--line);
+  }
+  .wtable td.dates{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .wtable td.fs-name{font-family:'Space Grotesk',sans-serif;font-weight:600;}
+  .wtable td.score{font-family:'IBM Plex Mono',monospace;}
+  .wtable td.score .n{color:var(--accent-dark);font-weight:600;}
+  .wtable td.score .empty-score{color:var(--line);}
+  .wtable tr.no-data td{color:var(--muted);}
+
+  @media (max-width:600px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const ADMIN_PIN = "2026"; // <- cambiá este código antes de compartir el link
+const STORE_KEY_PREFIX = "csat-resp:";
+
+/* ============ STATE ============ */
+let view = "survey"; // survey | success | gate | admin
+let ratings = { whatsapp: 0, recepcion: 0, fletero: 0 };
+let tipoEntrega = null; // 'deposito' | 'domicilio'
+let comentario = "";
+let lastTicket = "";
+let pinValue = "";
+let pinError = false;
+let adminData = null; // loaded responses
+let adminLoading = false;
+let adminError = "";
+
+const app = document.getElementById("app");
+
+/* ============ ICONS ============ */
+const ICON_STAR = `<path d="M12 2.6l2.86 6.13 6.64.66-5.02 4.6 1.37 6.6L12 17.27 6.15 20.6l1.37-6.6-5.02-4.6 6.64-.66z"/>`;
+const ICON_BOX = `<path d="M3 7.5l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M3 7.5v9l9 4 9-4v-9" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M12 11.5v9" stroke="currentColor" stroke-width="1.6"/>`;
+const ICON_TRUCK = `<path d="M2 7h11v8H2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13 10h4l3 3v2h-7v-5z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="6" cy="17" r="1.8" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="16.5" cy="17" r="1.8" stroke="currentColor" stroke-width="1.6" fill="none"/>`;
+
+function starsSVG(){return `<svg viewBox="0 0 24 24">${ICON_STAR}</svg>`;}
+
+/* ============ HELPERS ============ */
+function genTicket(){
+  const n = Math.floor(100000 + Math.random()*899999);
+  return "B-" + n;
+}
+function monthKey(d){ return d.slice(0,7); } // YYYY-MM from ISO date
+function monthLabel(m){
+  const [y,mo] = m.split("-");
+  const names = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  return names[parseInt(mo,10)-1] + " " + y.slice(2);
+}
+function avg(arr){
+  const f = arr.filter(v=>v!==null && v!==undefined);
+  if(!f.length) return null;
+  return f.reduce((a,b)=>a+b,0)/f.length;
+}
+function fmt(n){ return n===null ? "—" : n.toFixed(1); }
+
+/* ============ RENDER: STAR GROUP ============ */
+function renderStars(groupKey, value){
+  let html = `<div class="stars" role="radiogroup" aria-label="Puntaje ${groupKey}">`;
+  for(let i=1;i<=5;i++){
+    html += `<button type="button" class="star-btn ${i<=value?'filled':''}" data-group="${groupKey}" data-val="${i}" aria-pressed="${i<=value}" aria-label="${i} estrella${i>1?'s':''}">${starsSVG()}</button>`;
+  }
+  html += `</div><div class="stars-label">${value?ratingLabel(value):''}</div>`;
+  return html;
+}
+function ratingLabel(v){
+  return ["","Muy malo","Malo","Regular","Bueno","Excelente"][v];
+}
+
+/* ============ RENDER: SURVEY ============ */
+function renderSurvey(){
+  const showDeposito = tipoEntrega === "deposito";
+  const showDomicilio = tipoEntrega === "domicilio";
+  const canSubmit = ratings.whatsapp > 0 && tipoEntrega &&
+    ((tipoEntrega==="deposito" && ratings.recepcion>0) || (tipoEntrega==="domicilio" && ratings.fletero>0));
+
+  app.innerHTML = `
+  <div class="wrap">
+    <div class="ticket">
+      <div class="ticket-head">
+        <div class="eyebrow"><span>Comprobante de satisfacción</span><span class="mono">N° ${currentTicketPreview}</span></div>
+        <h1>¿Cómo fue tu experiencia con tu compra?</h1>
+      </div>
+      <div class="perf"></div>
+      <div class="ticket-body">
+
+        <div class="section">
+          <p class="q-label">Atención por WhatsApp</p>
+          <p class="q-sub">Desde la consulta hasta la confirmación del pedido</p>
+          ${renderStars("whatsapp", ratings.whatsapp)}
+        </div>
+
+        <hr class="dash"/>
+
+        <div class="section">
+          <p class="q-label">¿Cómo recibiste tu compra?</p>
+          <div class="choice-row">
+            <button type="button" class="choice ${showDeposito?'selected':''}" data-entrega="deposito">
+              <svg viewBox="0 0 24 24">${ICON_BOX}</svg>
+              <span>Retiré en depósito</span>
+            </button>
+            <button type="button" class="choice ${showDomicilio?'selected':''}" data-entrega="domicilio">
+              <svg viewBox="0 0 24 24">${ICON_TRUCK}</svg>
+              <span>Me lo enviaron a domicilio</span>
+            </button>
+          </div>
+
+          <div class="reveal ${showDeposito?'open':''}">
+            <div style="padding-top:18px;">
+              <p class="q-label">Atención en recepción</p>
+              <p class="q-sub">El trato al momento de retirar tu compra</p>
+              ${renderStars("recepcion", ratings.recepcion)}
+            </div>
+          </div>
+
+          <div class="reveal ${showDomicilio?'open':''}">
+            <div style="padding-top:18px;">
+              <p class="q-label">Atención del fletero</p>
+              <p class="q-sub">El trato y cuidado al momento de la entrega</p>
+              ${renderStars("fletero", ratings.fletero)}
+            </div>
+          </div>
+        </div>
+
+        <hr class="dash"/>
+
+        <div class="section">
+          <p class="q-label">¿Querés contarnos algo más? <span style="color:var(--muted);font-weight:400;">(opcional)</span></p>
+          <textarea id="comentario" placeholder="Tu comentario nos ayuda a mejorar...">${comentario}</textarea>
+        </div>
+      </div>
+      <div class="ticket-foot">
+        <button class="btn" id="submitBtn" ${canSubmit?'':'disabled'}>Enviar respuesta</button>
+        <p class="warn" id="warnMsg"></p>
+        <div class="footer-link"><a href="https://docs.google.com/spreadsheets" target="_blank" style="color:var(--muted);font-size:11.5px;font-family:'IBM Plex Mono',monospace;text-decoration:none;">ver respuestas en sheets</a></div>
+      </div>
+    </div>
+  </div>`;
+  wireSurvey(canSubmit);
+}
+
+let currentTicketPreview = genTicket();
+
+function wireSurvey(canSubmit){
+  app.querySelectorAll(".star-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const group = btn.dataset.group;
+      ratings[group] = parseInt(btn.dataset.val,10);
+      renderSurvey();
+    });
+  });
+  app.querySelectorAll(".choice").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      tipoEntrega = btn.dataset.entrega;
+      renderSurvey();
+    });
+  });
+  const ta = document.getElementById("comentario");
+  if(ta) ta.addEventListener("input", e=>{ comentario = e.target.value; });
+
+  document.getElementById("submitBtn").addEventListener("click", submitSurvey);
+  document.getElementById("adminLink").addEventListener("click", ()=>{ view="gate"; pinValue=""; pinError=false; render(); });
+}
+
+async function submitSurvey(){
+  const warn = document.getElementById("warnMsg");
+  const canSubmit = ratings.whatsapp > 0 && tipoEntrega &&
+    ((tipoEntrega==="deposito" && ratings.recepcion>0) || (tipoEntrega==="domicilio" && ratings.fletero>0));
+  if(!canSubmit){
+    warn.textContent = "Faltan datos: completá todos los puntajes antes de enviar.";
+    return;
+  }
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  const ticket = genTicket();
+  const now = new Date();
+  const payload = {
+    fecha: now.toISOString(),
+    mes: monthKey(now.toISOString()),
+    comprobante: ticket,
+    whatsapp: ratings.whatsapp,
+    tipoEntrega: tipoEntrega,
+    recepcion: tipoEntrega==="deposito" ? ratings.recepcion : null,
+    fletero: tipoEntrega==="domicilio" ? ratings.fletero : null,
+    comentario: comentario.trim()
+  };
+
+  try{
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycby97w-b9KzIvXSf3dOkW-rI6eNIKz7in7Pj2Ch-G9pdQX6hoZ4-FFviiT-YiTFpWIHU/exec";
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    lastTicket = ticket;
+    view = "success";
+    ratings = {whatsapp:0,recepcion:0,fletero:0};
+    tipoEntrega = null;
+    comentario = "";
+    render();
+  }catch(err){
+    warn.textContent = "No se pudo enviar tu respuesta. Probá de nuevo en un momento.";
+    btn.disabled = false;
+    btn.textContent = "Enviar respuesta";
+  }
+}
+
+/* ============ RENDER: SUCCESS ============ */
+function renderSuccess(){
+  app.innerHTML = `
+  <div class="wrap">
+    <div class="ticket">
+      <div class="success">
+        <div class="stamp-badge">¡Gracias!</div>
+        <h2>Recibimos tu respuesta</h2>
+        <p>Tu opinión nos ayuda a mejorar cada entrega.</p>
+        <p class="ticket-no mono">Comprobante N° ${lastTicket}</p>
+      </div>
+      <div class="perf"></div>
+      <div style="padding:18px 24px 26px;">
+        <button class="btn ghost" id="backBtn">Volver a la encuesta</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("backBtn").addEventListener("click", ()=>{ currentTicketPreview=genTicket(); view="survey"; render(); });
+}
+
+/* ============ RENDER: ADMIN GATE ============ */
+function renderGate(){
+  app.innerHTML = `
+  <div class="wrap">
+    <div class="ticket">
+      <div class="ticket-head" style="padding:18px 24px;">
+        <div class="eyebrow"><span>Acceso interno</span></div>
+        <h1 style="font-size:17px;">Panel de resultados</h1>
+      </div>
+      <div class="admin-gate ${pinError?'shake':''}">
+        <input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="Código de acceso" value="${pinValue}"/>
+        ${pinError?'<p class="warn" style="margin:0;">Código incorrecto</p>':''}
+        <button class="btn" id="pinSubmit">Entrar</button>
+        <button class="btn ghost" id="pinBack">Volver a la encuesta</button>
+      </div>
+    </div>
+  </div>`;
+  const input = document.getElementById("pinInput");
+  input.focus();
+  input.addEventListener("input", e=>{ pinValue = e.target.value; });
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") checkPin(); });
+  document.getElementById("pinSubmit").addEventListener("click", checkPin);
+  document.getElementById("pinBack").addEventListener("click", ()=>{ view="survey"; render(); });
+}
+function checkPin(){
+  if(pinValue === ADMIN_PIN){
+    pinError = false;
+    view = "admin";
+    render();
+    loadAdminData();
+  }else{
+    pinError = true;
+    render();
+  }
+}
+
+/* ============ ADMIN: DATA LOADING ============ */
+async function loadAdminData(){
+  adminLoading = true;
+  adminError = "";
+  renderAdminShell();
+  try{
+    const listRes = await window.storage.list(STORE_KEY_PREFIX, true);
+    const keys = (listRes && listRes.keys) ? listRes.keys : [];
+    const items = [];
+    for(const k of keys){
+      try{
+        const r = await window.storage.get(k, true);
+        if(r && r.value) items.push(JSON.parse(r.value));
+      }catch(e){ /* skip unreadable entry */ }
+    }
+    adminData = items;
+  }catch(err){
+    adminError = "No se pudieron cargar los datos. Probá actualizar.";
+    adminData = [];
+  }
+  adminLoading = false;
+  renderAdminShell();
+}
+
+function aggregateByMonth(items){
+  const months = {};
+  items.forEach(it=>{
+    const m = it.mes || monthKey(it.fecha || new Date().toISOString());
+    if(!months[m]) months[m] = {whatsapp:[],recepcion:[],fletero:[]};
+    months[m].whatsapp.push(it.whatsapp);
+    if(it.recepcion!==null && it.recepcion!==undefined) months[m].recepcion.push(it.recepcion);
+    if(it.fletero!==null && it.fletero!==undefined) months[m].fletero.push(it.fletero);
+  });
+  const keys = Object.keys(months).sort();
+  return keys.map(k=>({
+    mes:k,
+    label:monthLabel(k),
+    whatsapp: avg(months[k].whatsapp),
+    recepcion: avg(months[k].recepcion),
+    fletero: avg(months[k].fletero),
+    total: months[k].whatsapp.length
+  }));
+}
+
+/* Fines de semana reales de junio 2026 (sáb-dom) */
+const JUNE_WEEKENDS = [
+  { label:"Fin de semana 1", desde:"2026-06-06", hasta:"2026-06-07", display:"6 y 7 de junio" },
+  { label:"Fin de semana 2", desde:"2026-06-13", hasta:"2026-06-14", display:"13 y 14 de junio" },
+  { label:"Fin de semana 3", desde:"2026-06-20", hasta:"2026-06-21", display:"20 y 21 de junio" },
+  { label:"Fin de semana 4", desde:"2026-06-27", hasta:"2026-06-28", display:"27 y 28 de junio" }
+];
+
+function aggregateByWeekend(items){
+  return JUNE_WEEKENDS.map(w=>{
+    const inRange = items.filter(it=>{
+      const d = (it.fecha||"").slice(0,10);
+      return d >= w.desde && d <= w.hasta;
+    });
+    return {
+      ...w,
+      total: inRange.length,
+      whatsapp: avg(inRange.map(i=>i.whatsapp)),
+      recepcion: avg(inRange.map(i=>i.recepcion)),
+      fletero: avg(inRange.map(i=>i.fletero))
+    };
+  });
+}
+
+function exportCSV(items){
+  let csv = "fecha,comprobante,whatsapp,tipo_entrega,recepcion,fletero,comentario\n";
+  items.forEach(it=>{
+    const row = [
+      it.fecha, it.comprobante, it.whatsapp, it.tipoEntrega,
+      it.recepcion ?? "", it.fletero ?? "",
+      '"' + (it.comentario||"").replace(/"/g,'""') + '"'
+    ];
+    csv += row.join(",") + "\n";
+  });
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "respuestas_encuesta.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ============ RENDER: ADMIN SHELL ============ */
+let chartInstance = null;
+
+function renderAdminShell(){
+  const items = adminData || [];
+  const months = aggregateByMonth(items);
+  const weekends = aggregateByWeekend(items);
+  const totalAll = items.length;
+  const overallAvg = avg(items.map(i=>i.whatsapp)
+    .concat(items.map(i=>i.recepcion)).concat(items.map(i=>i.fletero)));
+  const depositoCount = items.filter(i=>i.tipoEntrega==="deposito").length;
+  const domicilioCount = items.filter(i=>i.tipoEntrega==="domicilio").length;
+
+  const recentComments = items
+    .filter(i=>i.comentario && i.comentario.length)
+    .sort((a,b)=> new Date(b.fecha) - new Date(a.fecha))
+    .slice(0,8);
+
+  app.innerHTML = `
+  <div class="wrap wide">
+    <div class="admin-top">
+      <div>
+        <h1>Panel de resultados</h1>
+        <p>${totalAll} respuesta${totalAll===1?'':'s'} recibida${totalAll===1?'':'s'} en total</p>
+      </div>
+      <div class="admin-actions">
+        <button id="refreshBtn">↻ actualizar</button>
+        <button id="exportBtn" ${totalAll?'':'disabled'}>↓ exportar CSV</button>
+        <button id="exitBtn">salir</button>
+      </div>
+    </div>
+
+    ${adminLoading ? `<div class="panel"><p class="empty">Cargando respuestas...</p></div>` : ""}
+    ${adminError ? `<div class="panel"><p class="empty">${adminError}</p></div>` : ""}
+
+    ${(!adminLoading && !adminError) ? `
+      <div class="kpis">
+        <div class="kpi"><div class="num">${totalAll}</div><div class="lbl">Respuestas totales</div></div>
+        <div class="kpi"><div class="num">${fmt(overallAvg)} <span class="stars-mini">★</span></div><div class="lbl">Promedio general</div></div>
+        <div class="kpi"><div class="num">${depositoCount}</div><div class="lbl">Retiros en depósito</div></div>
+        <div class="kpi"><div class="num">${domicilioCount}</div><div class="lbl">Envíos a domicilio</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Promedio mensual por sector</h3>
+        ${months.length ? '<canvas id="monthChart" height="260"></canvas>' : '<p class="empty">Todavía no hay datos suficientes para graficar.</p>'}
+      </div>
+
+      <div class="panel">
+        <h3>Junio 2026 · detalle por fin de semana</h3>
+        <table class="wtable">
+          <thead>
+            <tr><th>Fin de semana</th><th>Respuestas</th><th>WhatsApp</th><th>Recepción</th><th>Fletero</th></tr>
+          </thead>
+          <tbody>
+            ${weekends.map(w=>`
+              <tr class="${w.total===0?'no-data':''}">
+                <td>
+                  <div class="fs-name">${w.label}</div>
+                  <div class="dates">${w.display}</div>
+                </td>
+                <td>${w.total}</td>
+                <td class="score">${w.whatsapp!==null?`<span class="n">${fmt(w.whatsapp)}</span> ★`:'<span class="empty-score">—</span>'}</td>
+                <td class="score">${w.recepcion!==null?`<span class="n">${fmt(w.recepcion)}</span> ★`:'<span class="empty-score">—</span>'}</td>
+                <td class="score">${w.fletero!==null?`<span class="n">${fmt(w.fletero)}</span> ★`:'<span class="empty-score">—</span>'}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>Últimos comentarios</h3>
+        ${recentComments.length ? `<div class="comments">${recentComments.map(c=>`
+          <div class="comment">
+            “${escapeHtml(c.comentario)}”
+            <div class="meta">${new Date(c.fecha).toLocaleDateString('es-AR')} · ${c.tipoEntrega==='deposito'?'Retiro en depósito':'Envío a domicilio'}</div>
+          </div>`).join("")}</div>` : '<p class="empty">Todavía no hay comentarios.</p>'}
+      </div>
+    ` : ""}
+  </div>`;
+
+  document.getElementById("refreshBtn").addEventListener("click", loadAdminData);
+  document.getElementById("exitBtn").addEventListener("click", ()=>{ view="survey"; render(); });
+  const exportBtn = document.getElementById("exportBtn");
+  if(exportBtn) exportBtn.addEventListener("click", ()=>exportCSV(items));
+
+  if(!adminLoading && !adminError && months.length){
+    drawChart(months);
+  }
+}
+
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function drawChart(months){
+  const ctx = document.getElementById("monthChart");
+  if(!ctx) return;
+  if(chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: months.map(m=>m.label),
+      datasets: [
+        { label:"WhatsApp", data: months.map(m=>m.whatsapp), backgroundColor:"#2C6E63", borderRadius:4 },
+        { label:"Recepción", data: months.map(m=>m.recepcion), backgroundColor:"#7FAFA5", borderRadius:4 },
+        { label:"Fletero", data: months.map(m=>m.fletero), backgroundColor:"#B6432E", borderRadius:4 }
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ position:"bottom", labels:{ font:{family:"Inter"}, boxWidth:12 } } },
+      scales:{
+        y:{ min:0, max:5, ticks:{stepSize:1, font:{family:"IBM Plex Mono"}}, grid:{color:"#EFEAE0"} },
+        x:{ ticks:{font:{family:"IBM Plex Mono"}}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+/* ============ ROUTER ============ */
+function render(){
+  if(view==="survey") renderSurvey();
+  else if(view==="success") renderSuccess();
+  else if(view==="gate") renderGate();
+  else if(view==="admin") renderAdminShell();
+}
+render();
+</script>
+</body>
+</html>
